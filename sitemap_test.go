@@ -11,6 +11,7 @@ import (
 func TestSitemapGeneration(t *testing.T) {
 	dir := "./test_sitemaps"
 	baseURL := "https://www.example.com"
+	baseSitemapURL := "https://www.example.com/sitemaps/"
 
 	// Clean up before test
 	os.RemoveAll(dir)
@@ -40,7 +41,7 @@ func TestSitemapGeneration(t *testing.T) {
 		})
 	}
 
-	err := sm.Write()
+	err := sm.Write(baseSitemapURL)
 	if err != nil {
 		t.Fatalf("Error writing sitemaps: %v", err)
 	}
@@ -59,6 +60,12 @@ func TestSitemapGeneration(t *testing.T) {
 
 	if !strings.Contains(string(data), "<sitemapindex") {
 		t.Fatalf("Invalid sitemap index content")
+	}
+
+	// Optionally, check if the sitemap URLs in the index are correct
+	expectedSitemapURL := baseSitemapURL + "sitemap_1.xml"
+	if !strings.Contains(string(data), expectedSitemapURL) {
+		t.Fatalf("Sitemap index does not contain correct sitemap URLs")
 	}
 
 	// Clean up after test

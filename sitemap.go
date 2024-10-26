@@ -81,7 +81,8 @@ func (s *SitemapOptions) AddURLs(urls []SitemapURL) {
 }
 
 // Write generates the sitemap files based on the current URLs.
-func (s *SitemapOptions) Write() error {
+// baseSitemapURL is the base URL where the sitemap files will be accessible.
+func (s *SitemapOptions) Write(baseSitemapURL string) error {
 	// Ensure the directory exists
 	if _, err := os.Stat(s.Dir); os.IsNotExist(err) {
 		if err := os.MkdirAll(s.Dir, 0755); err != nil {
@@ -102,7 +103,7 @@ func (s *SitemapOptions) Write() error {
 	if len(s.URLs) <= s.MaxURLs {
 		return s.writeSitemapFile("sitemap.xml", s.URLs)
 	} else {
-		return s.writeSitemapIndex()
+		return s.writeSitemapIndex(baseSitemapURL)
 	}
 }
 
@@ -112,6 +113,18 @@ func (s *SitemapOptions) resolveURL(loc string) (string, error) {
 		return "", err
 	}
 	ref, err := url.Parse(loc)
+	if err != nil {
+		return "", err
+	}
+	return base.ResolveReference(ref).String(), nil
+}
+
+func (s *SitemapOptions) resolveSitemapURL(baseSitemapURL, sitemapName string) (string, error) {
+	base, err := url.Parse(strings.TrimRight(baseSitemapURL, "/") + "/")
+	if err != nil {
+		return "", err
+	}
+	ref, err := url.Parse(sitemapName)
 	if err != nil {
 		return "", err
 	}
@@ -137,7 +150,7 @@ func (s *SitemapOptions) writeSitemapFile(filename string, urls []SitemapURL) er
 	return os.WriteFile(filePath, buffer.Bytes(), 0644)
 }
 
-func (s *SitemapOptions) writeSitemapIndex() error {
+func (s *SitemapOptions) writeSitemapIndex(baseSitemapURL string) error {
 	index := SitemapIndex{
 		Xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9",
 	}
@@ -154,7 +167,7 @@ func (s *SitemapOptions) writeSitemapIndex() error {
 		if err != nil {
 			return err
 		}
-		sitemapURL, err := s.resolveURL("/" + sitemapName)
+		sitemapURL, err := s.resolveSitemapURL(baseSitemapURL, sitemapName)
 		if err != nil {
 			return err
 		}
